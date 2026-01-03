@@ -1,20 +1,17 @@
-// utils/imageUploader.js
-import cloudinary from "cloudinary";
+import { v2 as cloudinary } from "cloudinary";
 
-export const imageUploadToCloudinary = async (file,folder,height,quality) => {
-  const options = { folder };
+const imageUploadToCloudinary = async (filePath, folder) => {
+  const options = {
+    folder,
+    resource_type: "auto",
+  };
 
-  // optional transformations
-  if (height) options.height = height;
-  if (quality) options.quality = quality;
-
-  options.resource_type = "auto";
-
-  // upload file to cloudinary
-  const uploadResponse = await cloudinary.v2.uploader.upload(
-    file.tempFilePath,
+  const uploadResponse = await cloudinary.uploader.upload(
+    filePath,
     options
   );
 
   return uploadResponse;
 };
+
+export default imageUploadToCloudinary;

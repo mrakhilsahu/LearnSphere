@@ -1,16 +1,13 @@
-import Profile from "../models/Profile.js";
 import User from "../models/User.js";
+import Profile from "../models/Profile.js";
+import uploadImageToCloudinary from "../utils/imageUploader.js";
 
-// update profile
+/* ================= UPDATE PROFILE DETAILS ================= */
 export const updateProfile = async (req, res) => {
   try {
-    // get data from request body
     const { dateOfBirth, about, contactNumber, gender } = req.body;
-
-    // get user id from auth middleware
     const userId = req.user.id;
 
-    // validation
     if (!contactNumber || !gender) {
       return res.status(400).json({
         success: false,
@@ -18,42 +15,6 @@ export const updateProfile = async (req, res) => {
       });
     }
 
-    // find user and profile
-    const userDetails = await User.findById(userId);
-    const profileDetails = await Profile.findById(
-      userDetails.additionalDetails
-    );
-
-    // update profile
-    profileDetails.dateOfBirth = dateOfBirth;
-    profileDetails.about = about;
-    profileDetails.contactNumber = contactNumber;
-    profileDetails.gender = gender;
-
-    await profileDetails.save();  // to save in db 
-
-    // return response
-    return res.status(200).json({
-      success: true,
-      message: "Profile updated successfully",
-      data: profileDetails,
-    });
-   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "Error while updating profile",
-      error: error.message,
-    });
-  }
-};
-
-//delete account
-export const deleteAccount = async (req, res) => {
-  try {
-    // get user id from auth middleware
-    const userId = req.user.id;
-
-    // find user
     const userDetails = await User.findById(userId);
     if (!userDetails) {
       return res.status(404).json({
@@ -62,44 +23,133 @@ export const deleteAccount = async (req, res) => {
       });
     }
 
-    // delete associated profile
-    await Profile.findByIdAndDelete(userDetails.additionalDetails);
+    const profileDetails = await Profile.findById(userDetails.additionalDetails);
+    if (!profileDetails) {
+      return res.status(404).json({
+        success: false,
+        message: "Profile not found",
+      });
+    }
 
-    // delete user account
-    await User.findByIdAndDelete(userId);
+    if (dateOfBirth !== undefined) profileDetails.dateOfBirth = dateOfBirth;
+    if (about !== undefined) profileDetails.about = about;
 
-    // return response
+    profileDetails.contactNumber = contactNumber;
+    profileDetails.gender = gender;
+
+    await profileDetails.save();
+
     return res.status(200).json({
       success: true,
-      message: "Account deleted successfully",
+      message: "Profile updated successfully",
+      data: profileDetails,
     });
   } catch (error) {
+    console.error(error);
     return res.status(500).json({
       success: false,
-      message: "Error while deleting account",
+      message: "Error while updating profile",
       error: error.message,
     });
   }
 };
 
-// get all users details
-export const getAllUserDetails = async (req, res) => {
+/* ================= UPDATE DISPLAY PICTURE ================= */
+export const updateDisplayPicture = async (req, res) => {
   try {
-    // fetch all users with populated profile
-    const users = await User.find({})
-      .populate("additionalDetails")
-      .select("-password");
+    const userId = req.user.id;
 
-    // return response
+    // multer stores file here
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "Display picture is required",
+      });
+    }
+
+    // ✅ PASS FILE PATH, NOT FILE OBJECT
+    const image = await uploadImageToCloudinary(
+  req.file.path,
+  process.env.FOLDER_NAME
+ );
+
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { image: image.secure_url },
+      { new: true }
+    );
+
     return res.status(200).json({
       success: true,
-      message: "All user details fetched successfully",
-      data: users,
+      message: "Display picture updated successfully",
+      data: updatedUser,
     });
   } catch (error) {
+    console.error("UPDATE DISPLAY PIC ERROR:", error);
     return res.status(500).json({
       success: false,
-      message: "Error while fetching user details",
+      message: "Error updating display picture",
+      error: error.message,
+    });
+  }
+};
+
+/* ================= GET USER DETAILS ================= */
+export const getUserDetails = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const user = await User.findById(userId)
+      .populate("additionalDetails")
+      .exec();
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      user,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching user details",
+      error: error.message,
+    });
+  }
+};
+
+/* ================= DELETE ACCOUNT ================= */
+export const deleteAccount = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const userDetails = await User.findById(userId);
+    if (!userDetails) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    await Profile.findByIdAndDelete(userDetails.additionalDetails);
+    await User.findByIdAndDelete(userId);
+
+    return res.status(200).json({
+      success: true,
+      message: "Account deleted successfully",
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Error deleting account",
       error: error.message,
     });
   }

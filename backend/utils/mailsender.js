@@ -1,35 +1,45 @@
-
 // Nodemailer is used to send emails from Node.js applications
 import nodemailer from "nodemailer";
 
+/*
+  This utility sends emails.
+  Used in:
+  - OTP verification
+  - Reset password emails
+*/
+
 // email  -> receiver email address
+// title  -> email subject
 // body   -> HTML content of the email
 const mailSender = async (email, title, body) => {
 
-  // transporter defines how the email will be sent (SMTP configuration)
+  /*
+    Transporter defines how emails are sent.
+    SMTP configuration is taken from environment variables.
+  */
   const transporter = nodemailer.createTransport({
-    // mail server host (example: smtp.gmail.com)
-    host: process.env.MAIL_HOST,
+    host: process.env.MAIL_HOST, // e.g. smtp.gmail.com
     port: 587,
-    secure: false,
+    secure: false, // TLS
 
     auth: {
-      // sender email address
-      user: process.env.MAIL_USER,
-      pass: process.env.MAIL_PASS,
+      user: process.env.MAIL_USER, // sender email
+      pass: process.env.MAIL_PASS, // email password / app password
     },
   });
 
-  // sendMail actually sends the email
+  /*
+    sendMail actually sends the email
+    html allows styled email content
+  */
   const info = await transporter.sendMail({
-    // sender name and email
-    from: `"LMS" <${process.env.MAIL_USER}>`,
+    from: `"LMS" <${process.env.MAIL_USER}>`, // sender name
     to: email,
     subject: title,
     html: body,
   });
 
-  // return information about the sent email
+  // returns info like messageId, response, accepted emails
   return info;
 };
 

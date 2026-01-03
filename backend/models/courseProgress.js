@@ -1,12 +1,14 @@
-// models/CourseProgress.js
 import mongoose from "mongoose";
 
 const courseProgressSchema = new mongoose.Schema({
+  // reference to course
   courseID: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Course",
     required: true,
   },
+
+  // completed video ids
   completedVideos: [
     {
       type: mongoose.Schema.Types.ObjectId,

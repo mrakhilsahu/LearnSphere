@@ -1,7 +1,7 @@
-// models/Profile.js
 import mongoose from "mongoose";
 
 const profileSchema = new mongoose.Schema({
+  // optional user details
   gender: {
     type: String,
     trim: true,
